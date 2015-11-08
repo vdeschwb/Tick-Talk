@@ -2,7 +2,6 @@
 #include <utils.h>
 
 #define MAX_NUM_SLIDES 128
-#define NUM_INVERTER_LAYERS 2
 #define FPS 10
 #define BUF_SIZE 32
 #define NUM_MENU_SECTIONS 2
@@ -24,7 +23,6 @@ Window *main_window=NULL, *menu_window=NULL;
 TextLayer *title_layer=NULL, *info_layer=NULL, *time_layer=NULL, *train_layer=NULL;
 SimpleMenuLayer *menu=NULL;
 BitmapLayer *draw_layer;
-InverterLayer *invert_draw_layers[NUM_INVERTER_LAYERS];
 uint16_t delays[MAX_NUM_SLIDES];
 uint16_t current_slide;
 AppTimer *seconds_timer=NULL;
@@ -107,11 +105,7 @@ void update() {
     }
     
     write_time(current_epoch);
-    
-    for (int i=0; i<NUM_INVERTER_LAYERS; ++i) {
-        layer_set_hidden(inverter_layer_get_layer(invert_draw_layers[i]), running);
-    }
-    
+
     layer_set_hidden(bitmap_layer_get_layer(draw_layer), current_mode==TRAIN);
     layer_set_hidden(text_layer_get_layer(train_layer), current_mode!=TRAIN);
     
@@ -124,10 +118,7 @@ void update() {
 void next_slide() {
     vibes_long_pulse();
     current_slide++;
-    if (current_slide <= *num_slides) {
-//         update();
-//         buzz_timer = app_timer_register(delays[current_slide], &buzz_timer_handler, NULL);
-    } else {
+    if (current_slide > *num_slides) {
         running = false;
         current_slide = *num_slides;
         set_info(&info, "FINISHED!", 0);
@@ -313,6 +304,15 @@ void draw(Layer *my_layer, GContext* ctx) {
 
     // Draw progress bar progress
     graphics_fill_rect(ctx, GRect(5, 0, ((double) 134) * get_progress(), 20), 0, GCornerNone);
+    
+    // Draw pause icon
+    if (!running) {
+        graphics_context_set_stroke_color(ctx, GColorWhite);
+        graphics_draw_rect(ctx, GRect(66, 4, 6, 12));
+        graphics_fill_rect(ctx, GRect(67, 5, 4, 10), 0, GCornerNone);
+        graphics_draw_rect(ctx, GRect(72, 4, 6, 12));
+        graphics_fill_rect(ctx, GRect(73, 5, 4, 10), 0, GCornerNone);
+    }
 }
 
 void refresh_menu() {
@@ -389,14 +389,6 @@ void main_window_load() {
     layer_set_update_proc(bitmap_layer_get_layer(draw_layer), &draw);
     // Add the draw layer to the window
     layer_add_child(window_get_root_layer(main_window), bitmap_layer_get_layer(draw_layer));
-    
-    // Create inverter layers inside the draw layer
-    invert_draw_layers[0] = inverter_layer_create(GRect(67, 5, 4, 10));
-    invert_draw_layers[1] = inverter_layer_create(GRect(73, 5, 4, 10));
-    // Add the inverter draw layers to the draw layer
-    for (int i=0; i<NUM_INVERTER_LAYERS; ++i) {
-        layer_add_child(bitmap_layer_get_layer(draw_layer), inverter_layer_get_layer(invert_draw_layers[i]));
-    }
 }
 
 void main_window_appear() {
@@ -460,9 +452,6 @@ void handle_deinit(void) {
    	text_layer_destroy(time_layer);
    	text_layer_destroy(train_layer);
     bitmap_layer_destroy(draw_layer);
-    for (int i=0; i<NUM_INVERTER_LAYERS; ++i) {
-        inverter_layer_destroy(invert_draw_layers[i]);
-    }
     
     // Destroy buffers
     free(info_buf);
