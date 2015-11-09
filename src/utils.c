@@ -54,32 +54,44 @@ void clear_info(info_t *info) {
 }
 
 bool persist_data(uint16_t *data, uint16_t offset) {
-    bool succ = true;
+    LOGI("Persist data...");
+    bool succ=true;
     for (int i=0; i<data[0]+1; i+=2) {
-        succ &= (persist_write_int(i + offset, data[i] << 16 | data[i+1]) == S_SUCCESS);
+        int code_1 = persist_write_int(STORAGE_BASE_KEY + i + offset, data[i] << 16 | data[i+1]);
+        succ &= (code_1 == 0);
+        LOGI("%d", code_1);    
     }
     return succ;
 }
 
 void load_data(uint16_t *data, uint16_t offset) {
-    uint16_t len = persist_read_int(offset) >> 16;
+    LOGI("Loading data...");
+    uint16_t len = persist_read_int(STORAGE_BASE_KEY + offset) >> 16;
     int32_t tmp;
     for (int i=0; i<len+1; i+=2) {
-        tmp = persist_read_int(i + offset);
+        tmp = persist_read_int(STORAGE_BASE_KEY + i + offset);
         data[i] = tmp >> 16;
         data[i+1] = tmp & 0xFFFF;
     }
+    LOGI("Done.");
 }
 
 void load_settings(settings_t *settings) {
-    settings -> display_style = persist_read_int(0);
-    settings -> time_of_buzz_before_slide_ends = persist_read_int(1);
+    LOGI("Loading settings...");
+    settings -> display_style = persist_read_int(STORAGE_BASE_KEY);
+    settings -> time_of_buzz_before_slide_ends = persist_read_int(STORAGE_BASE_KEY + 1);
+    LOGI("Done.");
 }
 
 bool persist_settings(settings_t *settings) {
-    bool succ = true;
-    succ &= (persist_write_int(0, (int) (settings -> display_style)) == S_SUCCESS);
-    succ &= (persist_write_int(1, (int) (settings -> time_of_buzz_before_slide_ends)) == S_SUCCESS);
+    LOGI("Persist settings...");
+    bool succ=true;
+    int code_1 = persist_write_int(STORAGE_BASE_KEY, (int) (settings -> display_style));
+    int code_2 = persist_write_int(STORAGE_BASE_KEY + 1, (int) (settings -> time_of_buzz_before_slide_ends));
+    succ &= (code_1 == 0);
+    succ &= (code_2 == 0);
+    LOGI("%d", code_1);
+    LOGI("%d", code_2);
     return succ;
 }
 

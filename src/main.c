@@ -18,6 +18,11 @@ settings_t settings = {
     .NUM_SETTINGS = 2
 };
 
+#ifndef PBL_PLATFORM_APLITE
+    static StatusBarLayer *s_status_bar;
+    static Layer *s_battery_layer;
+#endif
+
 uint16_t *num_slides=NULL;
 Window *main_window=NULL, *menu_window=NULL;
 TextLayer *title_layer=NULL, *info_layer=NULL, *time_layer=NULL, *train_layer=NULL;
@@ -27,6 +32,8 @@ uint16_t delays[MAX_NUM_SLIDES];
 uint16_t current_slide;
 AppTimer *seconds_timer=NULL;
 volatile bool running;
+bool buzzed_during_slide=false;
+bool menus_initialized=false;
 ms_time_t last_time;
 ms_time_t current_epoch;
 info_t info;
@@ -37,34 +44,10 @@ char *info_buf=NULL, *time_buf=NULL;
 char time_of_buzz_before_slide_ends_buf[BUF_SIZE];
 
 void write_info() {
-    if (!info_layer) {
-        info_layer = text_layer_create(GRect(5, 40, 134, 30));
-    
-        // Set the font and text alignment
-        text_layer_set_font(info_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
-        text_layer_set_text_alignment(info_layer, GTextAlignmentCenter);
-
-        // Add the text layer to the window
-        layer_add_child(window_get_root_layer(main_window), text_layer_get_layer(info_layer));
-
-    }
-	
 	text_layer_set_text(info_layer, info_buf);
 }
 
-void write_time(ms_time_t time) {
-    if (!time_layer) {
-        time_layer = text_layer_create(GRect(5, 70, 134, 30));
-        
-        // Set the font and text alignment
-        text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
-        text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
-
-        // Add the text layer to the window
-        layer_add_child(window_get_root_layer(main_window), text_layer_get_layer(time_layer));
-
-    }
-	
+void write_time(ms_time_t time) {	
 	// Set the text, font, and text alignment
     char *buf1, *buf2;
     uint8_t bufsize=30;
@@ -117,6 +100,7 @@ void update() {
 
 void next_slide() {
     vibes_long_pulse();
+    buzzed_during_slide = false;
     current_slide++;
     if (current_slide > *num_slides) {
         running = false;
@@ -135,8 +119,9 @@ void seconds_timer_handler(void *data) {
         current_epoch = ms_time_subtract(current_time, last_time);
         
         if (current_mode == PRESENT) {
-            if (settings.time_of_buzz_before_slide_ends > 0 && delays[current_slide] - current_epoch.time_sec == settings.time_of_buzz_before_slide_ends) {
-                vibes_short_pulse();
+            if (!buzzed_during_slide && settings.time_of_buzz_before_slide_ends > 0 && delays[current_slide] - current_epoch.time_sec == settings.time_of_buzz_before_slide_ends) {
+                vibes_double_pulse();
+                buzzed_during_slide = true;
             }
 
             if (current_epoch.time_sec >= delays[current_slide]) {
@@ -156,6 +141,8 @@ void reset_time() {
     last_time = ms_time_get_wall_time();
     current_epoch.time_sec = 0;
     current_epoch.time_ms = 0;
+    
+    buzzed_during_slide=false;
 }
 
 void select_single_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -243,11 +230,6 @@ void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 void back_single_click_handler(ClickRecognizerRef recognizer, void *context) {
-    if (!menu) {
-        // Create menu layer
-        menu = simple_menu_layer_create(layer_get_frame(window_get_root_layer(menu_window)), menu_window, menu_sections, NUM_MENU_SECTIONS, NULL);
-        layer_add_child(window_get_root_layer(menu_window), simple_menu_layer_get_layer(menu));
-    }
     window_stack_push(menu_window, true);
 }
 
@@ -295,27 +277,31 @@ double get_progress() {
 }
 
 void draw(Layer *my_layer, GContext* ctx) {
+    Layer *window_layer = window_get_root_layer(main_window);
+    GRect bounds = layer_get_bounds(window_layer);
+    
     // Set stroke and fill colour
     graphics_context_set_fill_color(ctx, GColorBlack);
     graphics_context_set_stroke_color(ctx, GColorBlack);
     
     // Draw progress bar border
-    graphics_draw_rect(ctx, GRect(5, 0, 134, 20));
+    graphics_draw_rect(ctx, GRect(5, 0, bounds.size.w - 10, 20));
 
     // Draw progress bar progress
-    graphics_fill_rect(ctx, GRect(5, 0, ((double) 134) * get_progress(), 20), 0, GCornerNone);
+    graphics_fill_rect(ctx, GRect(5, 0, ((double) bounds.size.w - 10) * get_progress(), 20), 0, GCornerNone);
     
     // Draw pause icon
     if (!running) {
         graphics_context_set_stroke_color(ctx, GColorWhite);
-        graphics_draw_rect(ctx, GRect(66, 4, 6, 12));
-        graphics_fill_rect(ctx, GRect(67, 5, 4, 10), 0, GCornerNone);
-        graphics_draw_rect(ctx, GRect(72, 4, 6, 12));
-        graphics_fill_rect(ctx, GRect(73, 5, 4, 10), 0, GCornerNone);
+        graphics_draw_rect(ctx, GRect(bounds.size.w / 2 - 6, 4, 6, 12));
+        graphics_fill_rect(ctx, GRect(bounds.size.w / 2 - 5, 5, 4, 10), 0, GCornerNone);
+        graphics_draw_rect(ctx, GRect(bounds.size.w / 2, 4, 6, 12));
+        graphics_fill_rect(ctx, GRect(bounds.size.w / 2 + 1, 5, 4, 10), 0, GCornerNone);
     }
 }
 
 void refresh_menu() {
+    LOGI("Refresh menu");
     display_style_menu_items[0].title = enum_to_string(DISPLAY_STYLE, settings.display_style);
     
     if (settings.time_of_buzz_before_slide_ends == 0) {
@@ -324,49 +310,65 @@ void refresh_menu() {
         snprintf(time_of_buzz_before_slide_ends_buf, BUF_SIZE, "%u Seconds", settings.time_of_buzz_before_slide_ends);   
     }
     pre_slide_buzz_time_menu_items[0].title = time_of_buzz_before_slide_ends_buf;
+    menu_layer_reload_data(simple_menu_layer_get_menu_layer(menu));
+    LOGI("Done");
 }
 
 void display_style_click_handler(int index, void *context) {
     settings.display_style = (settings.display_style + 1) % 2;
     refresh_menu();
     persist_settings(&settings);
-    layer_mark_dirty(simple_menu_layer_get_layer(menu));
 }
 
 void pre_slide_buzz_time_click_handler(int index, void *context) {
     settings.time_of_buzz_before_slide_ends = (settings.time_of_buzz_before_slide_ends + 10) % 70;
     refresh_menu();
     persist_settings(&settings);
-    layer_mark_dirty(simple_menu_layer_get_layer(menu));
 }
 
 void init_menus() {
-    display_style_menu_items[0] = (SimpleMenuItem) {
-        .callback = display_style_click_handler 
-    };
-    
-    menu_sections[0] = (SimpleMenuSection) {
-        .num_items = 1,
-        .title = "Display Style",
-        .items = display_style_menu_items
-    };
-    
-    pre_slide_buzz_time_menu_items[0] = (SimpleMenuItem) {
-        .callback = pre_slide_buzz_time_click_handler 
-    };
-    
-    menu_sections[1] = (SimpleMenuSection) {
-        .num_items = 1,
-        .title = "Buzz before next",
-        .items = pre_slide_buzz_time_menu_items
-    };
-    
-    refresh_menu();
+    if (!menus_initialized) {
+        LOGI("Init menus");
+        display_style_menu_items[0] = (SimpleMenuItem) {
+            .callback = display_style_click_handler 
+        };
+
+        menu_sections[0] = (SimpleMenuSection) {
+            .num_items = 1,
+            .title = "Display Style",
+            .items = display_style_menu_items
+        };
+
+        pre_slide_buzz_time_menu_items[0] = (SimpleMenuItem) {
+            .callback = pre_slide_buzz_time_click_handler 
+        };
+
+        menu_sections[1] = (SimpleMenuSection) {
+            .num_items = 1,
+            .title = "Buzz before next",
+            .items = pre_slide_buzz_time_menu_items
+        };
+        menus_initialized = true;
+        LOGI("Done");
+    }
 }
 
 void main_window_load() {
+    LOGI("Main window load");
+    
+    Layer *window_layer = window_get_root_layer(main_window);
+    GRect bounds = layer_get_bounds(window_layer);
+    
+    int y_offset = 0;
+    #ifdef PBL_PLATFORM_BASALT
+        y_offset = 16;
+    #endif
+    #ifdef PBL_PLATFORM_CHALK
+        y_offset = 32;
+    #endif
+    
     // Create the titel layer
-	title_layer = text_layer_create(GRect(0, 0, 144, 40));
+	title_layer = text_layer_create(GRect(0, y_offset, bounds.size.w, 40));
 	// Set the text, font, and text alignment for title layer
 	text_layer_set_text(title_layer, "Tick Talk");
 	text_layer_set_font(title_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
@@ -375,84 +377,151 @@ void main_window_load() {
 	layer_add_child(window_get_root_layer(main_window), text_layer_get_layer(title_layer));
     
     // Create the train layer
-	train_layer = text_layer_create(GRect(0, 110, 144, 40));
+	train_layer = text_layer_create(GRect(0, y_offset + 100, bounds.size.w, 40));
 	// Set the text, font, and text alignment for title layer
 	text_layer_set_text(train_layer, "TRAINING");
 	text_layer_set_font(train_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
 	text_layer_set_text_alignment(train_layer, GTextAlignmentCenter);
 	// Add the title layer to the window
-	layer_add_child(window_get_root_layer(main_window), text_layer_get_layer(train_layer));
+	layer_add_child(window_layer, text_layer_get_layer(train_layer));
     
     // Create the draw layer
-    draw_layer = bitmap_layer_create(GRect(0, 110, 144, 20));    
+    draw_layer = bitmap_layer_create(GRect(0, y_offset + 110, bounds.size.w, 20));    
     // Set the draw layer's update routine
     layer_set_update_proc(bitmap_layer_get_layer(draw_layer), &draw);
     // Add the draw layer to the window
-    layer_add_child(window_get_root_layer(main_window), bitmap_layer_get_layer(draw_layer));
+    layer_add_child(window_layer, bitmap_layer_get_layer(draw_layer));
+    
+
+    // Info layer
+    info_layer = text_layer_create(GRect(5, y_offset + 40, bounds.size.w - 10, 30));
+
+    // Set the font and text alignment
+    text_layer_set_font(info_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
+    text_layer_set_text_alignment(info_layer, GTextAlignmentCenter);
+
+    // Add the text layer to the window
+    layer_add_child(window_layer, text_layer_get_layer(info_layer));
+    
+    // Time layer
+    time_layer = text_layer_create(GRect(5, y_offset + 70, bounds.size.w - 10, 30));
+
+    // Set the font and text alignment
+    text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
+    text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
+
+    // Add the text layer to the window
+    layer_add_child(window_layer, text_layer_get_layer(time_layer));
+    
+    #ifndef PBL_PLATFORM_APLITE 
+        // Set up the status bar last to ensure it is on top of other Layers
+        s_status_bar = status_bar_layer_create();
+        layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
+    
+        // Show legacy battery meter
+        s_battery_layer = layer_create(GRect(bounds.origin.x, bounds.origin.y, bounds.size.w, STATUS_BAR_LAYER_HEIGHT));
+        layer_set_update_proc(s_battery_layer, battery_proc);
+        layer_add_child(window_layer, s_battery_layer);
+    #endif
+}
+
+void main_window_unload() {
+    LOGI("Main window unload");
+    
+    // Destroy the layers
+	text_layer_destroy(title_layer);
+  	text_layer_destroy(info_layer);
+   	text_layer_destroy(time_layer);
+   	text_layer_destroy(train_layer);
+    bitmap_layer_destroy(draw_layer);
+    #ifndef PBL_PLATFORM_APLITE
+        status_bar_layer_destroy(s_status_bar);
+        layer_destroy(s_battery_layer);
+    #endif
+}
+
+void menu_window_load() {
+    LOGI("Menu window load");
+    init_menus();
+    
+    // Create menu layer
+    menu = simple_menu_layer_create(layer_get_frame(window_get_root_layer(menu_window)), menu_window, menu_sections, NUM_MENU_SECTIONS, NULL);
+    layer_add_child(window_get_root_layer(menu_window), simple_menu_layer_get_layer(menu));
+}
+
+void menu_window_unload() {
+    LOGI("Menu window unload");
+    
+    simple_menu_layer_destroy(menu);
 }
 
 void main_window_appear() {
+    LOGI("Main window appear");
     update();
+}
+
+void menu_window_appear() {
+    LOGI("Menu window appear");
+    refresh_menu();
 }
 
 void handle_init(void) {
     
     // Load settings
-    if (persist_exists(0)) {
+    if (persist_exists(STORAGE_BASE_KEY)) {
         load_settings(&settings);
     }
     
 	// Create the main window and set handlers
+    LOGI("Create main window");
 	main_window = window_create();
+    LOGI("Set main window handlers");
     window_set_window_handlers(main_window, (WindowHandlers) {
         .load = main_window_load,
         .appear = main_window_appear,
+        .unload = main_window_unload,
     });
     
+    // Set the click configuration provider
+    LOGI("Set main window config provider");
+    window_set_click_config_provider(main_window, (ClickConfigProvider) config_provider);
+    
     // Create the menu window
+    LOGI("Create menu window");
     menu_window = window_create();
-    
-	// Push the window
-	window_stack_push(main_window, true);
-    
-    init_menus();
+    window_set_window_handlers(menu_window, (WindowHandlers) {
+        .load = menu_window_load,
+        .appear = menu_window_appear,
+        .unload = menu_window_unload,
+    });
     
     // Init buffers
+    LOGI("Init buffers");
     info_buf = malloc(BUF_SIZE);
     time_buf = malloc(BUF_SIZE);
 	    
     // Init global vars
+    LOGI("Init global vars");
     delays[0] = 1;
     current_slide = 1;
     current_mode=PRESENT;
     running = false;
     num_slides = &(delays[0]);
     
-    if (persist_exists(settings.NUM_SETTINGS)) {
+    if (persist_exists(STORAGE_BASE_KEY + settings.NUM_SETTINGS)) {
         // Load data
         load_data(delays, settings.NUM_SETTINGS);
     }
-      
-    // Set the click configuration provider
-    window_set_click_config_provider(main_window, (ClickConfigProvider) config_provider);
     
-    update();
+    // Push the window
+    LOGI("Push main window");
+	window_stack_push(main_window, false);
 }
 
 void handle_deinit(void) {
+    LOGI("Deinitialize");
     running = false;
-    
-    // Stop timer
-    app_timer_cancel(seconds_timer);
-    seconds_timer = NULL;
-    
-	// Destroy the layers
-	text_layer_destroy(title_layer);
-  	text_layer_destroy(info_layer);
-   	text_layer_destroy(time_layer);
-   	text_layer_destroy(train_layer);
-    bitmap_layer_destroy(draw_layer);
-    
+      
     // Destroy buffers
     free(info_buf);
     info_buf = NULL;
@@ -462,6 +531,7 @@ void handle_deinit(void) {
 	// Destroy the windows
     window_destroy(menu_window);
 	window_destroy(main_window);
+    LOGI("Done");
 }
 
 int main(void) {
