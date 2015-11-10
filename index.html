@@ -27,6 +27,16 @@
         </div>
       </div>
     </div>
+    
+    <div class="item-container">
+  <div class="item-container-header">Display style</div>
+  <div class="item-container-content">
+    <div class="item tab-buttons" id="display_style_tab">
+      <a name="tab-1" class="tab-button active">Timer</a>
+      <a name="tab-1" class="tab-button">Countdown</a>
+    </div>
+  </div>
+</div>
 
     <div class="item-container">
   <div class="item-container-header">Input Field + Send Button</div>
@@ -44,7 +54,7 @@
 </div>
     
     <div class="item-container">
-  <div class="item-container-header">Slider</div>
+  <div class="item-container-header">Update rate</div>
   <div class="item-container-content">
     <label class="item">
       <input id='fps_slider' type="range" class="item-slider" name="slider-fps" value="10" min="1" max="10">
@@ -99,9 +109,9 @@
 
   (function() {
     var fpsSlider = document.getElementById('fps_slider');
+    var displayStyleTab = document.getElementById('display_style_tab');
 
     // Load any previously saved configuration, if available
-    localStorage['fps']
     if(localStorage['fps']) {
       fpsSlider.value = localStorage['fps'];
     }
