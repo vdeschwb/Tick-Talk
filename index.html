@@ -73,7 +73,7 @@
     // localStorage['background_color'] = options['background_color'];
     // localStorage['high_contrast'] = options['high_contrast'];
 
-    console.log('Got options: ' + JSON.stringify(options));
+    console.log('Got options: ' + options);
     return options;
   }
 
@@ -95,7 +95,7 @@
 
     // Set the return URL depending on the runtime environment
     var return_to = getQueryParam('return_to', 'pebblejs://close#');
-    document.location = return_to + encodeURIComponent(JSON.stringify(getConfigData()));
+    document.location = return_to + encodeURIComponent(getConfigData());
   });
 
   (function() {
