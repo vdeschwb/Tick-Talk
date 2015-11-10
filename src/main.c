@@ -4,7 +4,6 @@
 #define MAX_NUM_SLIDES 128
 #define BUF_SIZE 32
 
-
 SimpleMenuSection menu_sections[NUM_SETTINGS];
 SimpleMenuItem display_style_menu_items[1];
 SimpleMenuItem pre_slide_buzz_time_menu_items[1];
@@ -42,6 +41,9 @@ mode_e current_mode;
 char *info_buf=NULL, *time_buf=NULL;
 char time_of_buzz_before_slide_ends_buf[BUF_SIZE];
 char fps_buf[BUF_SIZE];
+
+
+
 
 void write_info() {
 	text_layer_set_text(info_layer, info_buf);
@@ -485,6 +487,19 @@ void menu_window_appear() {
     refresh_menu();
 }
 
+static void inbox_received_handler(DictionaryIterator *iter, void *context) {
+    Tuple *fps_t = dict_find(iter, FPS_KEY);
+    Tuple *display_style_t = dict_find(iter, DISPLAY_STYLE_KEY);
+    
+    LOGI("FPS: key=%u, type=%d, length=%u, value=%d", (unsigned int)fps_t->key, (int)fps_t->type, (unsigned int)fps_t->length, (int)fps_t->value->int32);
+
+    settings.display_style = display_style_t->value->uint16;
+    settings.fps = fps_t->value->uint16;
+    
+    set_info(&info, "Settings loaded!", 1);
+    update();
+}
+
 void handle_init(void) {
     
     // Load settings
@@ -536,6 +551,9 @@ void handle_init(void) {
     // Push the window
     LOGI("Push main window");
 	window_stack_push(main_window, false);
+    
+    app_message_register_inbox_received(inbox_received_handler);
+    app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 }
 
 void handle_deinit(void) {

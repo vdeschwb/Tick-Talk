@@ -1,8 +1,13 @@
 #include <pebble.h>
 
 #define NUM_SETTINGS 3
+// Config keys
+#define DISPLAY_STYLE_KEY 0
+#define BUZZ_BEFORE_NEXT_KEY 1
+#define FPS_KEY 2
+
 #define STORAGE_BASE_KEY 22456709
-// #undef RELEASE
+#undef RELEASE
 
 #ifdef RELEASE
     #pragma message "---- COMPILING IN RELEASE MODE - NO LOGGING WILL BE AVAILABLE ----"

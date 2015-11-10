@@ -1,7 +1,11 @@
 {
-    "appKeys": {},
+    "appKeys": {
+        "BUZZ_BEFORE_NEXT_KEY": 1,
+        "DISPLAY_STYLE_KEY": 0,
+        "FPS_KEY": 2
+    },
     "capabilities": [
-        ""
+        "configurable"
     ],
     "companyName": "Benjamin von Deschwanden",
     "longName": "Tick Talk - Presentation Timer",
