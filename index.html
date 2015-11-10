@@ -72,10 +72,15 @@
     </div>
   </body>
   <script>
+  function is_active(obj) {
+    return (' ' + obj.className + ' ').indexOf(' ' + active + ' ') > -1;
+  }
   function getConfigData() {
+    var displayStyleTab = document.getElementById('display_style_tab');
     var fpsSlider = document.getElementById('fps_slider');
  
     var options = {
+      'display_style': displayStyleTab.children.filter(is_active)[0].text,
       'fps': fpsSlider.valueAsNumber,
     };
 
