@@ -72,15 +72,20 @@
     </div>
   </body>
   <script>
-  function is_active(obj) {
-    return (' ' + obj.className + ' ').indexOf(' ' + active + ' ') > -1;
+  function get_active(obj) {
+    var list= obj.children;
+    for (var i = 0; i < list.length; i++) {
+      if ((' ' + list[i].className + ' ').indexOf(' ' + active + ' ') > -1) {
+        return list[i];
+      }
+    }
   }
   function getConfigData() {
     var displayStyleTab = document.getElementById('display_style_tab');
     var fpsSlider = document.getElementById('fps_slider');
  
     var options = {
-      'display_style': displayStyleTab.children.filter(is_active)[0].text,
+      'display_style': get_active_elem(displayStyleTab).text,
       'fps': fpsSlider.valueAsNumber,
     };
 
