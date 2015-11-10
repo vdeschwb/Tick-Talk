@@ -53,6 +53,10 @@ The application allows for two different display styles for the time during pres
 
 You can set an intermediate haptic feedback to be activated at a certain point in time before the end of a slide. This feedback only emits a short vibration pulse and can either be configured to occur [0, 10, 20, ..., 60] seconds before the end of a slide or turned off entirely.
 
+#### Update rate
+
+This parameter determines how often the display is refreshed, given in frames per second (FPS). The parameter accepts values in the range of ```[1..10]```. Apart from the visual effect, this parameter also influences how much battery the app uses while its timer is running. The lower the FPS setting, the less battery capacity is used.
+
 ## Trouble shooting
 
 ### Changes are not being saved
