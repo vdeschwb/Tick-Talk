@@ -32,8 +32,8 @@
   <div class="item-container-header">Display style</div>
   <div class="item-container-content">
     <div class="item tab-buttons" id="display_style_tab">
-      <a name="tab-1" class="tab-button active">Timer</a>
-      <a name="tab-1" class="tab-button">Countdown</a>
+      <a name="tab-1" class="tab-button active" data-value="0">Timer</a>
+      <a name="tab-1" class="tab-button" data-value="1">Countdown</a>
     </div>
   </div>
 </div>
@@ -85,7 +85,7 @@
     var fpsSlider = document.getElementById('fps_slider');
  
     var options = {
-      'display_style': get_active_elem(displayStyleTab).text,
+      'display_style': int(get_active_elem(displayStyleTab).dataset.value),
       'fps': fpsSlider.valueAsNumber,
     };
 
