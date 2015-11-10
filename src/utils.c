@@ -80,6 +80,7 @@ void load_settings(settings_t *settings) {
     LOGI("Loading settings...");
     settings -> display_style = persist_read_int(STORAGE_BASE_KEY);
     settings -> time_of_buzz_before_slide_ends = persist_read_int(STORAGE_BASE_KEY + 1);
+    settings -> fps = persist_read_int(STORAGE_BASE_KEY + 2);
     LOGI("Done.");
 }
 
@@ -88,10 +89,13 @@ bool persist_settings(settings_t *settings) {
     bool succ=true;
     int code_1 = persist_write_int(STORAGE_BASE_KEY, (int) (settings -> display_style));
     int code_2 = persist_write_int(STORAGE_BASE_KEY + 1, (int) (settings -> time_of_buzz_before_slide_ends));
+    int code_3 = persist_write_int(STORAGE_BASE_KEY + 2, (int) (settings -> fps));
     succ &= (code_1 == 0);
     succ &= (code_2 == 0);
+    succ &= (code_3 == 0);
     LOGI("%d", code_1);
     LOGI("%d", code_2);
+    LOGI("%d", code_3);
     return succ;
 }
 

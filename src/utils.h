@@ -1,5 +1,6 @@
 #include <pebble.h>
 
+#define NUM_SETTINGS 3
 #define STORAGE_BASE_KEY 22456709
 // #undef RELEASE
 
@@ -38,7 +39,7 @@ typedef struct {
 typedef struct {
     display_style_e display_style;
     uint16_t time_of_buzz_before_slide_ends;
-    uint16_t NUM_SETTINGS;
+    uint8_t fps;
 } settings_t;
 
 double ms_time_to_sec(ms_time_t time);

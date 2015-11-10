@@ -2,20 +2,19 @@
 #include <utils.h>
 
 #define MAX_NUM_SLIDES 128
-#define FPS 10
 #define BUF_SIZE 32
-#define NUM_MENU_SECTIONS 2
 
 
-SimpleMenuSection menu_sections[NUM_MENU_SECTIONS];
+SimpleMenuSection menu_sections[NUM_SETTINGS];
 SimpleMenuItem display_style_menu_items[1];
 SimpleMenuItem pre_slide_buzz_time_menu_items[1];
+SimpleMenuItem fps_menu_items[1];
 
 
 settings_t settings = {
     .display_style = TIMER,
     .time_of_buzz_before_slide_ends = 10,
-    .NUM_SETTINGS = 2
+    .fps = 10
 };
 
 #ifndef PBL_PLATFORM_APLITE
@@ -42,6 +41,7 @@ mode_e current_mode;
 // Buffers
 char *info_buf=NULL, *time_buf=NULL;
 char time_of_buzz_before_slide_ends_buf[BUF_SIZE];
+char fps_buf[BUF_SIZE];
 
 void write_info() {
 	text_layer_set_text(info_layer, info_buf);
@@ -132,7 +132,7 @@ void seconds_timer_handler(void *data) {
         }
         update();
         
-        seconds_timer = app_timer_register(1000 / FPS, &seconds_timer_handler, NULL);
+        seconds_timer = app_timer_register(1000 / settings.fps, &seconds_timer_handler, NULL);
     }
 }
 
@@ -247,7 +247,7 @@ void back_multi_click_handler(ClickRecognizerRef recognizer, void *context) {
             update();
             break;
         case 3:
-            persist_data(delays, settings.NUM_SETTINGS);
+            persist_data(delays, NUM_SETTINGS);
             window_stack_pop(true);
             break;
     }
@@ -310,6 +310,10 @@ void refresh_menu() {
         snprintf(time_of_buzz_before_slide_ends_buf, BUF_SIZE, "%u Seconds", settings.time_of_buzz_before_slide_ends);   
     }
     pre_slide_buzz_time_menu_items[0].title = time_of_buzz_before_slide_ends_buf;
+    
+    snprintf(fps_buf, BUF_SIZE, "%u FPS", settings.fps);   
+    fps_menu_items[0].title = fps_buf;
+    
     menu_layer_reload_data(simple_menu_layer_get_menu_layer(menu));
     LOGI("Done");
 }
@@ -322,6 +326,12 @@ void display_style_click_handler(int index, void *context) {
 
 void pre_slide_buzz_time_click_handler(int index, void *context) {
     settings.time_of_buzz_before_slide_ends = (settings.time_of_buzz_before_slide_ends + 10) % 70;
+    refresh_menu();
+    persist_settings(&settings);
+}
+
+void fps_click_handler(int index, void *context) {
+    settings.fps = (settings.fps) % 10 + 1;
     refresh_menu();
     persist_settings(&settings);
 }
@@ -347,6 +357,16 @@ void init_menus() {
             .num_items = 1,
             .title = "Buzz before next",
             .items = pre_slide_buzz_time_menu_items
+        };
+        
+        fps_menu_items[0] = (SimpleMenuItem) {
+            .callback = fps_click_handler 
+        };
+
+        menu_sections[2] = (SimpleMenuSection) {
+            .num_items = 1,
+            .title = "Update rate",
+            .items = fps_menu_items
         };
         menus_initialized = true;
         LOGI("Done");
@@ -445,7 +465,7 @@ void menu_window_load() {
     init_menus();
     
     // Create menu layer
-    menu = simple_menu_layer_create(layer_get_frame(window_get_root_layer(menu_window)), menu_window, menu_sections, NUM_MENU_SECTIONS, NULL);
+    menu = simple_menu_layer_create(layer_get_frame(window_get_root_layer(menu_window)), menu_window, menu_sections, NUM_SETTINGS, NULL);
     layer_add_child(window_get_root_layer(menu_window), simple_menu_layer_get_layer(menu));
 }
 
@@ -508,9 +528,9 @@ void handle_init(void) {
     running = false;
     num_slides = &(delays[0]);
     
-    if (persist_exists(STORAGE_BASE_KEY + settings.NUM_SETTINGS)) {
+    if (persist_exists(STORAGE_BASE_KEY + NUM_SETTINGS)) {
         // Load data
-        load_data(delays, settings.NUM_SETTINGS);
+        load_data(delays, NUM_SETTINGS);
     }
     
     // Push the window
