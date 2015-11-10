@@ -85,7 +85,7 @@
     var fpsSlider = document.getElementById('fps_slider');
  
     var options = {
-      'display_style': int(get_active_elem(displayStyleTab).dataset.value),
+      'display_style': parseInt(get_active_elem(displayStyleTab).dataset.value),
       'fps': fpsSlider.valueAsNumber,
     };
 
