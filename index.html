@@ -28,26 +28,28 @@
       </div>
     </div>
 
-    <div class='item-container'>
-      <div class='item-container-header'>Update rate</div>
-      <div class='item-container-content'>
-        <label class='item'>
-          High Contrast Mode
-          <input id='high_contrast_checkbox' type='checkbox' class='item-toggle'>
-        </label>
+    <div class="item-container">
+  <div class="item-container-header">Input Field + Send Button</div>
+  <div class="item-container-content">
+    <label class="item">
+      <div class="item-input-wrapper item-input-wrapper-button">
+        <input type="text" class="item-input" name="input-2" placeholder="Input field">
       </div>
-      <div class='item-container-footer'>
-        This switches the app colors to a higher contrast set that promotes readability in low light.
+      <input type="button" class="item-button item-input-button" value="SEND">
+    </label>
+  </div>
+  <div class='item-container-footer'>
+        Explanation
       </div>
-    </div>
+</div>
     
     <div class="item-container">
   <div class="item-container-header">Slider</div>
   <div class="item-container-content">
     <label class="item">
-      <input type="range" class="item-slider" name="slider-1" value="10">
+      <input id='fps-slider' type="range" class="item-slider" name="slider-fps" value="10">
       <div class="item-input-wrapper item-slider-text">
-        <input id='fps' type="text" class="item-input" name="slider-fps" value="10">
+        <input type="text" class="item-input" name="slider-fps" value="10">
       </div>
     </label>
   </div>
@@ -61,17 +63,15 @@
   </body>
   <script>
   function getConfigData() {
-    var backgroundColorPicker = document.getElementById('background_color_picker');
-    var highContrastCheckbox = document.getElementById('high_contrast_checkbox');
+    var fpsSlider = document.getElementById('fps_slider');
  
     var options = {
-      'background_color': backgroundColorPicker.value,
-      'high_contrast': highContrastCheckbox.checked
+      'fps': fpsSlider.value,
     };
 
     // Save for next launch
-    localStorage['background_color'] = options['background_color'];
-    localStorage['high_contrast'] = options['high_contrast'];
+    // localStorage['background_color'] = options['background_color'];
+    // localStorage['high_contrast'] = options['high_contrast'];
 
     console.log('Got options: ' + JSON.stringify(options));
     return options;
@@ -99,14 +99,10 @@
   });
 
   (function() {
-    var backgroundColorPicker = document.getElementById('background_color_picker');
-    var highContrastCheckbox = document.getElementById('high_contrast_checkbox');
+    var fpsSlider = document.getElementById('fps_slider');
 
     // Load any previously saved configuration, if available
-    if(localStorage['high_contrast']) {
-      highContrastCheckbox.checked = JSON.parse(localStorage['high_contrast']);
-      backgroundColorPicker.value = localStorage['background_color'];
-    }
+    // localStorage['fps']
   })();
   </script>
 </html>
