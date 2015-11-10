@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-  <title>Slate Example Configuration</title>
+  <title>Tick-Talk Configuration</title>
   <link rel='stylesheet' type='text/css' href='css/slate.min.css'>
   <script src='js/slate.min.js'></script>
   <style>
@@ -72,7 +72,7 @@
     </div>
   </body>
   <script>
-  function get_active(obj) {
+  function get_active_elem(obj) {
     var list= obj.children;
     for (var i = 0; i < list.length; i++) {
       if ((' ' + list[i].className + ' ').indexOf(' ' + active + ' ') > -1) {
