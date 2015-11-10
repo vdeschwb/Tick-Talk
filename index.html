@@ -70,8 +70,7 @@
     };
 
     // Save for next launch
-    // localStorage['background_color'] = options['background_color'];
-    // localStorage['high_contrast'] = options['high_contrast'];
+    localStorage['fps'] = options['fps'];
 
     console.log('Got options: ' + options);
     return options;
@@ -102,7 +101,10 @@
     var fpsSlider = document.getElementById('fps_slider');
 
     // Load any previously saved configuration, if available
-    // localStorage['fps']
+    localStorage['fps']
+    if(localStorage['fps']) {
+      fpsSlider.value = localStorage['fps'];
+    }
   })();
   </script>
 </html>
