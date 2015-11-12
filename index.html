@@ -29,6 +29,17 @@
     </div>
     
     <div class="item-container">
+  <div class="item-container-header">IP</div>
+  <div class="item-container-content">
+    <label class="item">
+      <div class="item-input-wrapper">
+        <input id="ip_input" type="text" class="item-input" name="input-1" placeholder="Input field">
+      </div>
+    </label>
+  </div>
+</div>
+    
+    <div class="item-container">
   <div class="item-container-header">Display style</div>
   <div class="item-container-content">
     <div class="item tab-buttons" id="display_style_tab">
@@ -103,10 +114,12 @@
   function getConfigData() {
     var displayStyleTab = document.getElementById('display_style_tab');
     var fpsSlider = document.getElementById('fps_slider');
+    var ipInput = document.getElementById('ip_input');
  
     var options = {
       'display_style': parseInt(get_active_elem(displayStyleTab).dataset.value),
       'fps': fpsSlider.valueAsNumber,
+      'IP': ipInput.value,
     };
 
     // Save for next launch
